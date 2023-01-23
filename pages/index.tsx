@@ -1,84 +1,169 @@
-import type { NextPage } from 'next'
-import Head from 'next/head'
-import Image from 'next/image'
+import { useAddress, useContract, useDisconnect, useMetamask } from '@thirdweb-dev/react';
+import { BigNumber } from 'ethers';
+import type { NextPage } from 'next';
+import Head from 'next/head';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import { BarLoader } from 'react-spinners';
+import FirstOfCollection from '../public/1.png';
+import SecondOfCollection from '../public/2.png';
+import ThirdOfCollection from '../public/3.png';
+import QuarterOfCollection from '../public/4.png';
+import MainCollection from '../public/main.png';
+import toast from 'react-hot-toast'
 
 const Home: NextPage = () => {
+  const [claimedSupply, setClaimedSupply] = useState<number>(0)
+  const [totalSupply, setTotalSupply] = useState<BigNumber>()
+  const [princeInEth, setPrinceInEth] = useState<string>()
+  const [loading, setLoading] = useState<boolean>(true)
+  const { contract } = useContract(process.env.NEXT_PUBLIC_NFT_DROP_ADDRESS, "nft-drop")
+
+  const connectWithMetamask = useMetamask()
+  const address = useAddress();
+  const disconnect = useDisconnect();
+
+  useEffect(() => {
+    if (!contract) return;
+
+    const fetchNFTDropData = async () => {
+      const claimed = await contract.getAllClaimed()
+      const total = await contract.totalSupply()
+
+      setClaimedSupply(claimed.length)
+      setTotalSupply(total)
+      setLoading(false)
+    }
+
+    const fetchPrice = async () => {
+      const claimConditioons = await contract.claimConditions.getAll();
+      setPrinceInEth(claimConditioons?.[0].currencyMetadata.displayValue)
+    }
+
+    setLoading(true)
+    fetchNFTDropData();
+    fetchPrice()
+    setLoading(false)
+  }, [contract])
+
+
+  const mintNFT = async () => {
+    if (!contract || !address) return
+
+    setLoading(true)
+    try {
+      const quantity = 1
+      await contract.claimTo(address, quantity)
+      toast.success("HOORAY.. You Successfully Minted!")
+    } catch (err) {
+      toast.error("Whoops... Something went wrong!")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-2">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-black">
       <Head>
-        <title>Create Next App</title>
+        <title>Developer Collection NFT Drop</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
-        <h1 className="text-6xl font-bold">
-          Welcome to{' '}
-          <a className="text-blue-600" href="https://nextjs.org">
-            Next.js!
-          </a>
-        </h1>
 
-        <p className="mt-3 text-2xl">
-          Get started by editing{' '}
-          <code className="rounded-md bg-gray-100 p-3 font-mono text-lg">
-            pages/index.tsx
-          </code>
-        </p>
+      <div className='py-12 h-full flex-col text-center'>
+        <div className='flex flex-col items-center justify-center py-2 min-h-full'>
+          <div>
+            <Image className='w-60 rounded-xl object-cover h-96 lg:w-72' src={MainCollection} alt="" />
+          </div>
 
-        <div className="mt-6 flex max-w-4xl flex-wrap items-center justify-around sm:w-full">
-          <a
-            href="https://nextjs.org/docs"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Documentation &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Find in-depth information about Next.js features and its API.
-            </p>
-          </a>
+          <h1 className='text-4xl font-bold text-white py-3'>Developer Collection</h1>
+          <h2 className='text-xl text-gray-300 '>A Collection of Developer Collection differents styles</h2>
 
-          <a
-            href="https://nextjs.org/learn"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Learn &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Learn about Next.js in an interactive course with quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Examples &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Discover and deploy boilerplate example Next.js projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Deploy &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
         </div>
-      </main>
 
-      <footer className="flex h-24 w-full items-center justify-center border-t">
-        <a
-          className="flex items-center justify-center gap-2"
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-        </a>
-      </footer>
+      </div>
+
+      <div className='w-full py-12 h-full'>
+        <div className='flex flex-col lg:flex-row items-center justify-between pb-3 lg:px-32'>
+          <h1 className='cursor-pointer text-xl text-white font-extralight'>
+            The{' '}
+            <span className='font-extrabold  text-white'>Developer Collection</span>{' '}
+            NFT Drop
+          </h1>
+
+          <button className={`w-80 my-10 text-xs rounded-full px-4 py-2 
+             text-white lg:px-5 lg:py-3 lg:text-base lg:w-40 ${address ? "bg-red-800" : "bg-emerald-700"}`}
+            onClick={() => address ? disconnect() : connectWithMetamask()}
+          >{address ? 'Sign Out' : 'Sign In'}</button>
+        </div>
+
+        <hr className='my-2 border mx-32 border-red-900' />
+
+        {address && (
+          <p className='text-center text-sm text-red-800'>
+            You're logged in with wallet {address.substring(0, 5)}...{address.substring(address.length - 5)} </p>
+        )}
+
+        <div className='my-14 flex flex-1 flex-col items-center space-y-6 text-center lg:space-y-0'>
+          <div className=' flex flex-col gap-y-3 lg:flex-row lg:gap-x-3'>
+            <Image className='w-60 rounded-xl object-cover h-96 lg:w-72' src={FirstOfCollection} alt="" />
+            <Image className='w-60 rounded-xl object-cover h-96 lg:w-72' src={SecondOfCollection} alt="" />
+            <Image className='w-60 rounded-xl object-cover h-96 lg:w-72' src={ThirdOfCollection} alt="" />
+          </div>
+
+          {loading ? (
+            <p className='py-4 text-xl text-white animate-pulse'>Loading Supply Count...</p>
+          ) : (
+            <p className='py-4 text-xl text-white'>{claimedSupply} / {totalSupply?.toString()} NFT's claimed</p>
+          )}
+
+          {loading && <div className='py-12'><BarLoader color="#991B1B" /></div>}
+
+          <button
+            onClick={mintNFT}
+            disabled={loading || claimedSupply === totalSupply?.toNumber() || !address}
+            className='h-16 w-80 bg-red-600 text-white rounded-full my-10 font-bold disabled:bg-gray-400'>
+            {loading ? (
+              <>Loading</>
+            ) : claimedSupply === totalSupply?.toNumber() ? (
+              <>SOLD OUT</>
+            ) : !address ? (
+              <>Sign in to Mint</>
+            ) : (
+              <span className='font-bold'>Mint NFT ({princeInEth} ETH)</span>
+            )}
+
+          </button>
+
+        </div>
+
+        <hr className='my-2 border mx-32 border-red-900' />
+
+      </div>
+
+      <div className='py-12 px-16 h-full flex-col'>S
+        <div className='flex items-center justify-between pb-3'>
+          <h1 className='cursor-pointer text-xl text-white font-extralight'>
+            The{' '}
+            <span className='font-extrabold  text-white'>Future Collections</span>{' '}
+          </h1>
+
+        </div>
+
+        <div className='flex flex-col mb-12 items-center space-y-6 gap-x-4 lg:space-y-0 lg:flex-row '>
+          <div className='items-start lg:w-96'>
+            <p className='pt-2 text-xl text-white leading-9'>The first collection was based on futuristic mysterious developers.
+              Seeking more and more to improve, we are thinking of a line of variations associating humor and cuteness</p>
+          </div>
+
+          <div className='items-center'>
+            <Image className='w-60 rounded-xl object-cover h-96 lg:w-72' src={QuarterOfCollection} alt="" />
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
   )
 }

@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/sanity/node_modules
 /.pnp
 .pnp.js
 
@@ -17,7 +18,7 @@
 
 # misc
 .DS_Store
-*.pem
+*.pem 
 
 # debug
 npm-debug.log*
